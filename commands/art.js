@@ -22,7 +22,7 @@ export async function handleMapleStoryArtCommand(interaction) {
             .setTitle('Random MapleStory Art')
             .setImage(imageUrl)
             .setURL(`https://danbooru.donmai.us/posts/${post.id}`)
-            .setColor('#FFA500');
+            .setColor('#FFFFFF');
 
         await interaction.reply({ embeds: [embed] });
     } catch (error) {
