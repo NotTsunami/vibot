@@ -1,5 +1,4 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import { registerCommands } from './registerCommands.js';
 import { handleMapleStoryArtCommand } from './commands/art.js';
 import { handleRollCommand } from './commands/dice.js';
 import { handleTriviaCommand } from './commands/trivia.js';
@@ -11,9 +10,11 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates]
 });
 
-client.once('ready', async () => {
-    await registerCommands();
-});
+// In development we don't want to keep spamming Discord with API updates
+// This is broken out into another command, run 'npm run register' to register slash commands
+// client.once('ready', async () => {
+//     await registerCommands();
+// });
 
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;

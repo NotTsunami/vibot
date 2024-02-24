@@ -61,7 +61,7 @@ const commands = [
 const rest = new REST({ version: '9' }).setToken(token);
 
 // Function to register the commands with the Discord API
-export async function registerCommands() {
+ (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
 
@@ -74,4 +74,4 @@ export async function registerCommands() {
     } catch (error) {
         console.error('Failed to register commands:', error);
     }
-}
+})();
