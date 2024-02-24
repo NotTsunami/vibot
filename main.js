@@ -6,19 +6,33 @@ import { handleAddTriggerCommand, handleRemoveTriggerCommand, checkForTriggers }
 import { handleLeaveCommand, handlePlayCommand, handleQueueCommand, handleSkipCommand, handleStopCommand, musicQueues } from './commands/music.js';
 import { token } from './configs/config.js';
 
+const statusMessages = [
+    "VIII HIIII",
+    "It's wap o' clock!",
+    "bearbear check",
+];
+
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates]
 });
 
-// In development we don't want to keep spamming Discord with API updates
-// This is broken out into another command, run 'npm run register' to register slash commands
-// client.once('ready', async () => {
-//     await registerCommands();
-// });
+client.on('ready', () => {
+    let statusIndex = 0;
+
+    setInterval(() => {
+        const status = statusMessages[statusIndex];
+        client.user.setActivity(status, { type: "PLAYING" }); // You can change the type: PLAYING, STREAMING, LISTENING, WATCHING
+
+        // Update the index to point to the next status message,
+        // looping back to the first message when reaching the end of the array
+        statusIndex = (statusIndex + 1) % statusMessages.length;
+    }, 60000); // 60000 milliseconds = 1 minute
+});
 
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
 
+    // NOTE: Any changes to commands needs to updated via `npm run register`
     switch (interaction.commandName) {
         // General commands
         case 'vi8ball':
