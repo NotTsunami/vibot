@@ -17,6 +17,13 @@ const commands = [
         .setName('viart')
         .setDescription('Returns random MapleStory art.'),
     new SlashCommandBuilder()
+        .setName('vichoose')
+        .setDescription('Chooses one option from a list of comma-separated options.')
+        .addStringOption(option => 
+            option.setName('options')
+            .setDescription('Enter your options separated by commas')
+            .setRequired(true)),
+    new SlashCommandBuilder()
         .setName('viroll')
         .setDescription('Rolls a dice with a specified number of sides.')
         .addIntegerOption(option =>

@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import { handleMapleStoryArtCommand } from './commands/art.js';
-import { handleEightBallCommand, handleRollCommand } from './commands/misc.js';
+import { handleChooseCommand, handleEightBallCommand, handleRollCommand } from './commands/misc.js';
 import { handleTriviaCommand } from './commands/trivia.js';
 import { handleAddTriggerCommand, handleRemoveTriggerCommand, checkForTriggers } from './commands/chatTriggers.js';
 import { handleLeaveCommand, handlePlayCommand, handleQueueCommand, handleSkipCommand, handleStopCommand, musicQueues } from './commands/music.js';
@@ -26,6 +26,9 @@ client.on('interactionCreate', async interaction => {
             break;
         case 'viart':
             await handleMapleStoryArtCommand(interaction);
+            break;
+        case 'vichoose':
+            await handleChooseCommand(interaction);
             break;
         case 'vitrivia':
             await handleTriviaCommand(interaction);
