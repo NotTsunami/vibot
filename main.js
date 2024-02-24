@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import { handleMapleStoryArtCommand } from './commands/art.js';
-import { handleRollCommand } from './commands/dice.js';
+import { handleEightBallCommand, handleRollCommand } from './commands/misc.js';
 import { handleTriviaCommand } from './commands/trivia.js';
 import { handleAddTriggerCommand, handleRemoveTriggerCommand, checkForTriggers } from './commands/chatTriggers.js';
 import { handleLeaveCommand, handlePlayCommand, handleQueueCommand, handleSkipCommand, handleStopCommand, musicQueues } from './commands/music.js';
@@ -21,6 +21,9 @@ client.on('interactionCreate', async interaction => {
 
     switch (interaction.commandName) {
         // General commands
+        case '8ball':
+            await handleEightBallCommand(interaction);
+            break;
         case 'art':
             await handleMapleStoryArtCommand(interaction);
             break;

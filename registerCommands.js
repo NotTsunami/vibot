@@ -7,11 +7,15 @@ import { token, clientId } from './configs/config.js';
 const commands = [
     // General commands
     new SlashCommandBuilder()
+        .setName('8ball')
+        .setDescription('Ask a yes/no question and receive wisdom from the Magic 8-Ball.')
+        .addStringOption(option =>
+            option.setName('question')
+            .setDescription('Your yes/no question')
+            .setRequired(true)),
+    new SlashCommandBuilder()
         .setName('art')
         .setDescription('Returns random MapleStory art.'),
-    new SlashCommandBuilder()
-        .setName('trivia')
-        .setDescription('Starts a trivia question. Only available for Poggers server.'),
     new SlashCommandBuilder()
         .setName('roll')
         .setDescription('Rolls a dice with a specified number of sides.')
@@ -19,6 +23,9 @@ const commands = [
             option.setName('sides')
                 .setDescription('Number of sides on the dice')
                 .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('trivia')
+        .setDescription('Starts a trivia question. Only available for Poggers server.'),
     // Chat trigger commands
     new SlashCommandBuilder()
         .setName('addtrigger')
