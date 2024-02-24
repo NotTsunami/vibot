@@ -1,10 +1,10 @@
-import { joinVoiceChannel, createAudioResource, createAudioPlayer, getVoiceConnection, AudioPlayerStatus, generateDependencyReport } from '@discordjs/voice';
+import { joinVoiceChannel, createAudioResource, createAudioPlayer, getVoiceConnection, AudioPlayerStatus } from '@discordjs/voice';
 import ytdl from 'ytdl-core';
 
 export const musicQueues = new Map();
 
 function setupAudioPlayer(guildId) {
-    const player = createAudioPlayer();
+    const player = createAudioPlayer({ maxMissedFrames: 9999 });
     player.on('error', error => {
         console.error(`Error occurred in audio player for guild ${guildId}:`, error.message);
         const queue = musicQueues.get(guildId);
@@ -13,7 +13,6 @@ function setupAudioPlayer(guildId) {
             playSong(guildId); // Attempt to play the next song
         }
     });
-    console.log(generateDependencyReport());
     return player;
 }
 
