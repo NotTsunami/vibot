@@ -10,34 +10,51 @@ function setupAudioPlayer(guildId) {
         const queue = musicQueues.get(guildId);
         if (queue) {
             queue.textChannel.send('An error occurred during playback. Trying the next song...').catch(console.error);
-            playSong(guildId); // Attempt to play the next song
+            skipSong(guildId); // Skip to the next song in case of an error
         }
     });
     return player;
 }
 
+function skipSong(guildId) {
+    const queue = musicQueues.get(guildId);
+    if (queue && queue.songs.length > 0) {
+        playSong(guildId); // Immediately attempt to play the next song
+    } else {
+        handleNoSongsLeft(guildId);
+    }
+}
+
+function handleNoSongsLeft(guildId) {
+    const connection = getVoiceConnection(guildId);
+    if (connection) {
+        connection.destroy();
+        musicQueues.delete(guildId);
+        const queue = musicQueues.get(guildId);
+        if (queue) {
+            queue.textChannel.send('Leaving the voice channel due to inactivity.').catch(console.error);
+        }
+    }
+}
+
 function playSong(guildId) {
     const queue = musicQueues.get(guildId);
     if (!queue || queue.songs.length === 0) {
-        setTimeout(() => {
-            const connection = getVoiceConnection(guildId);
-            if (connection && queue.songs.length === 0) {
-                connection.destroy();
-                musicQueues.delete(guildId);
-                queue.textChannel.send('Leaving the voice channel due to inactivity.').catch(console.error);
-            }
-        }, 120000); // 2 minutes
+        handleNoSongsLeft(guildId);
         return;
     }
 
     const song = queue.songs.shift();
-    const stream = ytdl(song.url, { filter: 'audioonly' });
+    const stream = ytdl(song.url, { filter: 'audioonly', highWaterMark: 1 << 25 })
+        .on('error', error => {
+            console.error(`Stream error in guild ${guildId}:`, error.message);
+            queue.textChannel.send('An error occurred while trying to play the song. Skipping...').catch(console.error);
+            skipSong(guildId); // Attempt to play the next song or end playback
+        });
+
     const resource = createAudioResource(stream);
     queue.player.play(resource);
-
-    queue.player.once(AudioPlayerStatus.Idle, () => {
-        playSong(guildId);
-    });
+    queue.player.once(AudioPlayerStatus.Idle, () => playSong(guildId));
 }
 
 export async function handlePlayCommand(interaction) {
@@ -55,7 +72,7 @@ export async function handlePlayCommand(interaction) {
     const song = { url };
 
     if (!musicQueues.has(guildId)) {
-        const player = setupAudioPlayer(guildId); // Use the setup function to get a player with error handling
+        const player = setupAudioPlayer(guildId);
         const queue = {
             voiceChannel,
             textChannel: interaction.channel,
@@ -101,9 +118,19 @@ export async function handleStopCommand(interaction) {
 export async function handleSkipCommand(interaction) {
     const guildId = interaction.guildId;
     const queue = musicQueues.get(guildId);
-    if (queue) {
-        queue.player.stop(); // This will trigger the next song to play
-        await interaction.reply('Skipped the current song.');
+
+    if (!queue || queue.songs.length === 0) {
+        await interaction.reply('The music queue is currently empty.');
+        return;
+    }
+
+    // Skip logic should ensure there's a next song
+    if (queue.songs.length > 1) {
+        queue.player.stop(); // Triggering the next song
+        const nextSong = queue.songs[1]; // Access the next song after skipping
+        await interaction.reply(`Skipped! Now playing: **${nextSong.title}**`);
+    } else {
+        await interaction.reply("There's no song to skip to.");
     }
 }
 
@@ -112,25 +139,24 @@ export async function handleQueueCommand(interaction) {
     const queue = musicQueues.get(guildId);
 
     if (!queue || queue.songs.length === 0) {
-        return interaction.reply('The music queue is currently empty.');
+        await interaction.reply('The music queue is currently empty.');
+        return;
     }
 
-    let replyMessage = '**Current Music Queue:**\n';
+    let message = '**Current Queue:**\n';
     queue.songs.forEach((song, index) => {
         if (index === 0) {
-            replyMessage += `**Now Playing:** ${song.title} (${song.url})\n\n**Up Next:**\n`;
+            message += `🎶 **Now Playing:** ${song.title}\n\n**Up Next:**\n`;
         } else {
-            replyMessage += `${index}. ${song.title} (${song.url})\n`;
+            message += `${index}. ${song.title}\n`;
         }
     });
 
-    // Discord messages have a max length of 2000 characters. Consider splitting long messages.
-    if (replyMessage.length >= 2000) {
-        // Split the message or truncate with a note about the queue size
-        return interaction.reply('The music queue is too long to display fully.');
+    if (message.length >= 2000) {
+        message = message.substring(0, 1997) + '...';
     }
 
-    await interaction.reply(replyMessage);
+    await interaction.reply(message);
 }
 
 export async function handleLeaveCommand(interaction) {
