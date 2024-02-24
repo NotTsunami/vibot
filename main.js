@@ -21,39 +21,39 @@ client.on('interactionCreate', async interaction => {
 
     switch (interaction.commandName) {
         // General commands
-        case '8ball':
+        case 'vi8ball':
             await handleEightBallCommand(interaction);
             break;
-        case 'art':
+        case 'viart':
             await handleMapleStoryArtCommand(interaction);
             break;
-        case 'trivia':
+        case 'vitrivia':
             await handleTriviaCommand(interaction);
             break;
-        case 'roll':
+        case 'viroll':
             await handleRollCommand(interaction);
             break;
         // Chat trigger commands
-        case 'addtrigger':
+        case 'viaddtrigger':
             await handleAddTriggerCommand(interaction);
             break;
-        case 'removetrigger':
+        case 'viremovetrigger':
             await handleRemoveTriggerCommand(interaction);
             break;
         // Music commands
-        case 'play':
+        case 'viplay':
             await handlePlayCommand(interaction);
             break;
-        case 'skip':
+        case 'viskip':
             await handleSkipCommand(interaction);
             break;
-        case 'stop':
+        case 'vistop':
             await handleStopCommand(interaction);
             break;
-        case 'queue':
+        case 'viqueue':
             await handleQueueCommand(interaction);
             break;
-        case 'leave':
+        case 'vileave':
             await handleLeaveCommand(interaction);
             break;
     }

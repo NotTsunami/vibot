@@ -7,28 +7,28 @@ import { token, clientId } from './configs/config.js';
 const commands = [
     // General commands
     new SlashCommandBuilder()
-        .setName('8ball')
+        .setName('vi8ball')
         .setDescription('Ask a yes/no question and receive wisdom from the Magic 8-Ball.')
         .addStringOption(option =>
             option.setName('question')
             .setDescription('Your yes/no question')
             .setRequired(true)),
     new SlashCommandBuilder()
-        .setName('art')
+        .setName('viart')
         .setDescription('Returns random MapleStory art.'),
     new SlashCommandBuilder()
-        .setName('roll')
+        .setName('viroll')
         .setDescription('Rolls a dice with a specified number of sides.')
         .addIntegerOption(option =>
             option.setName('sides')
                 .setDescription('Number of sides on the dice')
                 .setRequired(true)),
     new SlashCommandBuilder()
-        .setName('trivia')
+        .setName('vitrivia')
         .setDescription('Starts a trivia question. Only available for Poggers server.'),
     // Chat trigger commands
     new SlashCommandBuilder()
-        .setName('addtrigger')
+        .setName('viaddtrigger')
         .setDescription('Adds a new chat trigger.')
         .addStringOption(option =>
             option.setName('trigger')
@@ -39,7 +39,7 @@ const commands = [
                 .setDescription('The bot response for the trigger')
                 .setRequired(true)),
     new SlashCommandBuilder()
-        .setName('removetrigger')
+        .setName('viremovetrigger')
         .setDescription('Removes an existing chat trigger.')
         .addStringOption(option =>
             option.setName('trigger')
@@ -47,20 +47,20 @@ const commands = [
                 .setRequired(true)),
     // Music commands
     new SlashCommandBuilder()
-        .setName('play')
+        .setName('viplay')
         .setDescription('Plays a song from YouTube.')
         .addStringOption(option => option.setName('url').setDescription('The URL of the song to play').setRequired(true)),
     new SlashCommandBuilder()
-        .setName('stop')
+        .setName('vistop')
         .setDescription('Stops the music and clears the queue.'),
     new SlashCommandBuilder()
-        .setName('skip')
+        .setName('viskip')
         .setDescription('Skips the current song.'),
     new SlashCommandBuilder()
-        .setName('queue')
+        .setName('viqueue')
         .setDescription('Returns the current queue.'),
     new SlashCommandBuilder()
-        .setName('leave')
+        .setName('vileave')
         .setDescription('Leaves the voice channel.')
 ].map(command => command.toJSON());
 
