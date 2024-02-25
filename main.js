@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { ActivityType, Client, GatewayIntentBits } from 'discord.js';
 import { handleMapleStoryArtCommand } from './commands/art.js';
 import { handleChooseCommand, handleEightBallCommand, handleRollCommand } from './commands/misc.js';
 import { handleTriviaCommand } from './commands/trivia.js';
@@ -6,27 +6,12 @@ import { handleAddTriggerCommand, handleRemoveTriggerCommand, checkForTriggers }
 import { handleLeaveCommand, handlePlayCommand, handleQueueCommand, handleSkipCommand, handleStopCommand, musicQueues } from './commands/music.js';
 import { token } from './configs/config.js';
 
-const statusMessages = [
-    "VIII HIIII",
-    "It's wap o' clock!",
-    "bearbear check",
-];
-
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildPresences]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates]
 });
 
 client.on('ready', () => {
-    let statusIndex = 0;
-
-    setInterval(() => {
-        const status = statusMessages[statusIndex];
-        client.user.setActivity(status, { type: "PLAYING" }); // You can change the type: PLAYING, STREAMING, LISTENING, WATCHING
-
-        // Update the index to point to the next status message,
-        // looping back to the first message when reaching the end of the array
-        statusIndex = (statusIndex + 1) % statusMessages.length;
-    }, 60000); // 60000 milliseconds = 1 minute
+    client.user.setActivity("It's wap o' clock!", { type: ActivityType.Playing });
 });
 
 client.on('interactionCreate', async interaction => {
