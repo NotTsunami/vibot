@@ -1,23 +1,20 @@
 import { joinVoiceChannel, createAudioResource, createAudioPlayer, getVoiceConnection, AudioPlayerStatus } from '@discordjs/voice';
 import ytdl from 'ytdl-core';
 
+// Initialize music queue and leave timeouts maps
 export const musicQueues = new Map();
-let leaveTimeouts = new Map(); // Track leave timeouts per guild
+const leaveTimeouts = new Map();
 
 function setupAudioPlayer(guildId) {
     const player = createAudioPlayer({ maxMissedFrames: 9999 });
     player.on('error', error => {
         console.error(`Error occurred in audio player for guild ${guildId}:`, error.message);
-        const queue = musicQueues.get(guildId);
-        if (queue) {
-            queue.textChannel.send('An error occurred during playback. Trying the next song...').catch(console.error);
-            skipSong(guildId); // Skip to the next song in case of an error
-        }
+        processQueue(guildId);
     });
     return player;
 }
 
-function skipSong(guildId) {
+function processQueue(guildId) {
     const queue = musicQueues.get(guildId);
     if (queue && queue.songs.length > 0) {
         playSong(guildId); // Immediately attempt to play the next song
@@ -27,24 +24,16 @@ function skipSong(guildId) {
 }
 
 function handleNoSongsLeft(guildId) {
-    // Clear existing timeout to avoid multiple timeouts
     if (leaveTimeouts.has(guildId)) {
         clearTimeout(leaveTimeouts.get(guildId));
-        leaveTimeouts.delete(guildId);
     }
-
-    // Set a new timeout for leaving the voice channel
     const timeout = setTimeout(() => {
         const connection = getVoiceConnection(guildId);
         if (connection) {
             connection.destroy();
             musicQueues.delete(guildId);
-            const queue = musicQueues.get(guildId);
-            if (queue) {
-                queue.textChannel.send('Leaving the voice channel due to inactivity.').catch(console.error);
-            }
+            leaveTimeouts.delete(guildId);
         }
-        leaveTimeouts.delete(guildId);
     }, 120000);
     leaveTimeouts.set(guildId, timeout);
 }
@@ -62,8 +51,8 @@ function playSong(guildId) {
         leaveTimeouts.delete(guildId);
     }
 
-    const song = queue.songs.shift();
-    const stream = ytdl(song.url, { filter: 'audioonly', highWaterMark: 1 << 25 })
+    const songUrl = queue.songs.shift();
+    const stream = ytdl(songUrl, { filter: 'audioonly', highWaterMark: 1 << 25 })
         .on('error', error => {
             console.error(`Stream error in guild ${guildId}:`, error.message);
             queue.textChannel.send('An error occurred while trying to play the song. Skipping...').catch(console.error);
@@ -72,7 +61,8 @@ function playSong(guildId) {
 
     const resource = createAudioResource(stream);
     queue.player.play(resource);
-    queue.player.once(AudioPlayerStatus.Idle, () => playSong(guildId));
+    queue.player.once(AudioPlayerStatus.Idle, () => processQueue(guildId));
+    queue.textChannel.send(`🎶 Now playing: ${songUrl}`).catch(console.error);
 }
 
 export async function handlePlayCommand(interaction) {
@@ -81,13 +71,13 @@ export async function handlePlayCommand(interaction) {
     const voiceChannel = interaction.member.voice.channel;
 
     if (!voiceChannel) {
-        return interaction.reply("You're not in a voice channel.");
+        await interaction.reply("You're not in a voice channel.");
+        return;
     }
     if (!ytdl.validateURL(url)) {
-        return interaction.reply('Please provide a valid YouTube URL.');
+        await interaction.reply('Please provide a valid YouTube URL.');
+        return;
     }
-
-    const song = { url };
 
     if (!musicQueues.has(guildId)) {
         const player = setupAudioPlayer(guildId);
@@ -96,7 +86,7 @@ export async function handlePlayCommand(interaction) {
             textChannel: interaction.channel,
             connection: null,
             player,
-            songs: [song],
+            songs: [url],
         };
 
         musicQueues.set(guildId, queue);
@@ -110,15 +100,15 @@ export async function handlePlayCommand(interaction) {
             connection.subscribe(player);
             queue.connection = connection;
             playSong(guildId);
-            await interaction.reply(`🎶 Now playing: ${url}`);
+            await interaction.reply(`🎶 Added to queue: ${url}`);
         } catch (err) {
             console.error(err);
             musicQueues.delete(guildId);
-            await interaction.reply('Failed to play the song.');
+            await interaction.reply('Failed to queue the song.');
         }
     } else {
         const queue = musicQueues.get(guildId);
-        queue.songs.push(song);
+        queue.songs.push(url);
         await interaction.reply(`🎶 Added to queue: ${url}`);
     }
 }
@@ -127,8 +117,8 @@ export async function handleStopCommand(interaction) {
     const guildId = interaction.guildId;
     const queue = musicQueues.get(guildId);
     if (queue) {
-        queue.songs = []; // Clear the queue
-        queue.player.stop(); // Stop the player
+        queue.songs = [];
+        queue.player.stop();
         await interaction.reply('Stopped the music and cleared the queue.');
     }
 }
@@ -136,19 +126,11 @@ export async function handleStopCommand(interaction) {
 export async function handleSkipCommand(interaction) {
     const guildId = interaction.guildId;
     const queue = musicQueues.get(guildId);
-
-    if (!queue || queue.songs.length === 0) {
-        await interaction.reply('The music queue is currently empty.');
-        return;
-    }
-
-    // Skip logic should ensure there's a next song
-    if (queue.songs.length > 1) {
-        queue.player.stop(); // Triggering the next song
-        const nextSong = queue.songs[1]; // Access the next song after skipping
-        await interaction.reply(`Skipped! Now playing: **${nextSong.title}**`);
+    if (queue && queue.player) {
+        queue.player.stop(); // This ensures the current song is stopped and the next song starts
+        await interaction.reply('Skipped the current song.');
     } else {
-        await interaction.reply("There's no song to skip to.");
+        await interaction.reply('There is no song currently playing.');
     }
 }
 
@@ -164,9 +146,9 @@ export async function handleQueueCommand(interaction) {
     let message = '**Current Queue:**\n';
     queue.songs.forEach((song, index) => {
         if (index === 0) {
-            message += `🎶 **Now Playing:** ${song.title}\n\n**Up Next:**\n`;
+            message += `🎶 **Now Playing:** ${song}\n\n**Up Next:**\n`;
         } else {
-            message += `${index}. ${song.title}\n`;
+            message += `${index}. ${song}\n`;
         }
     });
 
@@ -180,16 +162,10 @@ export async function handleQueueCommand(interaction) {
 export async function handleLeaveCommand(interaction) {
     const guildId = interaction.guildId;
     const voiceConnection = getVoiceConnection(guildId);
-
     if (voiceConnection) {
-        // Clear the music queue for the guild
-        const queue = musicQueues.get(guildId);
-        if (queue) {
-            queue.songs = []; // Clear the song array or reset the queue object
-            musicQueues.delete(guildId);
-        }
-
-        voiceConnection.destroy(); // Disconnects from the voice channel
+        voiceConnection.destroy();
+        musicQueues.delete(guildId);
+        leaveTimeouts.delete(guildId);
         await interaction.reply('Left the voice channel and cleared the queue.');
     } else {
         await interaction.reply('I am not in a voice channel.');
