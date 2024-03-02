@@ -2,6 +2,7 @@ import { joinVoiceChannel, createAudioResource, createAudioPlayer, getVoiceConne
 import ytdl from 'ytdl-core';
 
 export const musicQueues = new Map();
+let leaveTimeouts = new Map(); // Track leave timeouts per guild
 
 function setupAudioPlayer(guildId) {
     const player = createAudioPlayer({ maxMissedFrames: 9999 });
@@ -26,15 +27,26 @@ function skipSong(guildId) {
 }
 
 function handleNoSongsLeft(guildId) {
-    const connection = getVoiceConnection(guildId);
-    if (connection) {
-        connection.destroy();
-        musicQueues.delete(guildId);
-        const queue = musicQueues.get(guildId);
-        if (queue) {
-            queue.textChannel.send('Leaving the voice channel due to inactivity.').catch(console.error);
-        }
+    // Clear existing timeout to avoid multiple timeouts
+    if (leaveTimeouts.has(guildId)) {
+        clearTimeout(leaveTimeouts.get(guildId));
+        leaveTimeouts.delete(guildId);
     }
+
+    // Set a new timeout for leaving the voice channel
+    const timeout = setTimeout(() => {
+        const connection = getVoiceConnection(guildId);
+        if (connection) {
+            connection.destroy();
+            musicQueues.delete(guildId);
+            const queue = musicQueues.get(guildId);
+            if (queue) {
+                queue.textChannel.send('Leaving the voice channel due to inactivity.').catch(console.error);
+            }
+        }
+        leaveTimeouts.delete(guildId);
+    }, 120000);
+    leaveTimeouts.set(guildId, timeout);
 }
 
 function playSong(guildId) {
@@ -42,6 +54,12 @@ function playSong(guildId) {
     if (!queue || queue.songs.length === 0) {
         handleNoSongsLeft(guildId);
         return;
+    }
+
+    // Clear leave timeout when a new song starts playing
+    if (leaveTimeouts.has(guildId)) {
+        clearTimeout(leaveTimeouts.get(guildId));
+        leaveTimeouts.delete(guildId);
     }
 
     const song = queue.songs.shift();
