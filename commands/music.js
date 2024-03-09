@@ -6,7 +6,7 @@ export const musicQueues = new Map();
 const leaveTimeouts = new Map();
 
 function setupAudioPlayer(guildId) {
-    const player = createAudioPlayer({ maxMissedFrames: 9999 });
+    const player = createAudioPlayer({ maxMissedFrames: 999999999 });
     player.on('error', error => {
         console.error(`Error occurred in audio player for guild ${guildId}:`, error.message);
         processQueue(guildId);
@@ -56,7 +56,7 @@ function playSong(guildId) {
         .on('error', error => {
             console.error(`Stream error in guild ${guildId}:`, error.message);
             queue.textChannel.send('An error occurred while trying to play the song. Skipping...').catch(console.error);
-            skipSong(guildId); // Attempt to play the next song or end playback
+            processQueue(guildId); // Attempt to play the next song or end playback
         });
 
     const resource = createAudioResource(stream);
