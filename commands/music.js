@@ -1,14 +1,30 @@
 import { joinVoiceChannel, createAudioResource, createAudioPlayer, getVoiceConnection, AudioPlayerStatus } from '@discordjs/voice';
+import { promisify } from 'util';
+import fs from 'fs';
+import path from 'path';
 import ytdl from 'ytdl-core';
 
 // Initialize music queue and leave timeouts maps
 export const musicQueues = new Map();
 const leaveTimeouts = new Map();
+const appendFileAsync = promisify(fs.appendFile);
+
+async function logErrorToFile(message) {
+    const logFilePath = path.join(__dirname, '../errors.log');
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ${message}\n`;
+
+    try {
+        await appendFileAsync(logFilePath, logMessage);
+    } catch (err) {
+        console.error('Failed to write to log file:', err);
+    }
+}
 
 function setupAudioPlayer(guildId) {
     const player = createAudioPlayer({ maxMissedFrames: 999999999 });
-    player.on('error', error => {
-        console.error(`Error occurred in audio player for guild ${guildId}:`, error.message);
+    player.on('error', async error => {
+        await logErrorToFile(`Stream error in guild ${guildId}: ${error.message}`);
         processQueue(guildId);
     });
     return player;
@@ -52,9 +68,9 @@ function playSong(guildId) {
     }
 
     const songUrl = queue.songs.shift();
-    const stream = ytdl(songUrl, { filter: 'audioonly', highWaterMark: 1 << 25 })
-        .on('error', error => {
-            console.error(`Stream error in guild ${guildId}:`, error.message);
+    const stream = ytdl(songUrl, { filter: 'audioonly', highWaterMark: 1 << 25, dlChunkSize: 0 })
+        .on('error', async error => {
+            await logErrorToFile(`Stream error in guild ${guildId}: ${error.message}`);
             queue.textChannel.send('An error occurred while trying to play the song. Skipping...').catch(console.error);
             processQueue(guildId); // Attempt to play the next song or end playback
         });
